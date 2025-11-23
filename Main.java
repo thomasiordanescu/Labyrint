@@ -1,33 +1,43 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
-import java.io.IOException;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+
         ObjectMapper mapper = new ObjectMapper();
 
-        try {
-            // Replace with your JSON file path
-            File file = new File("maze.json");
-            MazeData mazeData = mapper.readValue(file, MazeData.class);
-
-            // Print out some details to verify
-            System.out.println("Maze width: " + mazeData.getWidth());
-            System.out.println("Maze height: " + mazeData.getHeight());
-            System.out.println("Number of horizontal walls: " + mazeData.getHwalls().size());
-            System.out.println("Number of vertical walls: " + mazeData.getVwalls().size());
-            System.out.println("Number of jumps: " + mazeData.getJumps().size());
-            System.out.println("Number of quests: " + mazeData.getQuests().size());
-
-            // Example: print the first quest
-            if (!mazeData.getQuests().isEmpty()) {
-                Quest firstQuest = mazeData.getQuests().get(0);
-                System.out.println("First quest from (" + firstQuest.getFrom().getX() + ", " + firstQuest.getFrom().getY() + 
-                                   ") to (" + firstQuest.getTo().getX() + ", " + firstQuest.getTo().getY() + ")");
+        File f = null;
+        if (args != null && args.length > 0) {
+            f = new File(args[0]);
+            if (!f.exists()) {
+                System.out.println("WARNING: Can't find file " + args[0]);
+                f = new File("maze.json");
+                if (!f.exists()) {
+                    System.out.println("WARNING: Can't find default file maze.json");
+                    System.exit(1);
+                }
             }
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
+            System.out.println("WARNING: no file passed as arg. Falling back to default maze.json");
+            f = new File("maze.json");
+            if (!f.exists()) {
+                System.out.println("WARNING: Can't find default file maze.json");
+                System.exit(1);
+            }
         }
+         
+        MazeData data = mapper.readValue(f, MazeData.class);
+
+        Pathfinder pf = new Pathfinder(data);
+
+        for (Quest q : data.getQuests()) {
+            printDistance(q.getFrom(), q.getTo(), pf);
+        }
+    }
+
+    public static void printDistance(Coordinate from, Coordinate to, Pathfinder pf) {
+        Pathfinder.PathResult result = pf.dijkstra(from, to);
+        System.out.println("distance from (" + from.getX() + ", " + from.getY() +
+                           ") to (" + to.getX() + ", " + to.getY() + "): " + result.cost);
     }
 }
